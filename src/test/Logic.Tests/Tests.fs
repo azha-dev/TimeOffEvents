@@ -50,7 +50,60 @@ let overlapTests =
 
       Expect.isFalse (Logic.overlapsWith request1 request2) "The requests don't overlap"
     }
+
+    test "Requests on 2 requests overlap" {
+      let request1 = {
+        UserId = "jdoe"
+        RequestId = Guid.NewGuid()
+        Start = { Date = DateTime(2019, 10, 1); HalfDay = AM }
+        End = { Date = DateTime(2019, 10, 2); HalfDay = PM }
+      }
+
+      let request2 = {
+        UserId = "jdoe"
+        RequestId = Guid.NewGuid()
+        Start = { Date = DateTime(2019, 10, 2); HalfDay = AM }
+        End = { Date = DateTime(2019, 10, 3); HalfDay = PM }
+      }
+
+      Expect.isTrue (Logic.overlapsWith request1 request2) "The requests overlap"
+    }
   ]
+
+[<Tests>]
+let overlapWithAnyTests =
+  testList "Overlap with any tests" [
+    test "Test if one date is overlap" {
+      let request = {
+        UserId = "jdoe"
+        RequestId = Guid.NewGuid()
+        Start = { Date = DateTime(2019, 10, 1); HalfDay = AM }
+        End = { Date = DateTime(2019, 10, 2); HalfDay = PM }
+      }
+      let requests = [
+        {
+          UserId = "jdoe"
+          RequestId = Guid.NewGuid()
+          Start = { Date = DateTime(2019, 10, 2); HalfDay = AM }
+          End = { Date = DateTime(2019, 10, 3); HalfDay = PM }
+        }
+        {
+          UserId = "jdoe"
+          RequestId = Guid.NewGuid()
+          Start = { Date = DateTime(2019, 10, 4); HalfDay = AM }
+          End = { Date = DateTime(2019, 10, 5); HalfDay = PM }
+        }
+        {
+          UserId = "jdoe"
+          RequestId = Guid.NewGuid()
+          Start = { Date = DateTime(2019, 10, 6); HalfDay = AM }
+          End = { Date = DateTime(2019, 10, 7); HalfDay = PM }
+        }
+      ] 
+      Expect.isTrue(Logic.overlapsWithAnyRequest requests request) "One date is overlap"
+    }
+  ]
+
 
 [<Tests>]
 let creationTests =
