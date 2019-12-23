@@ -313,3 +313,4 @@ output.html
 
 .ionide/
 .vscode/
+.paket/
