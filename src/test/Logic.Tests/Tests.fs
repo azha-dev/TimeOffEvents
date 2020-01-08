@@ -102,6 +102,35 @@ let overlapWithAnyTests =
       ] 
       Expect.isTrue(Logic.overlapsWithAnyRequest requests request) "One date is overlap"
     }
+    test "Test if no date is overlap" {
+      let request = {
+        UserId = "jdoe"
+        RequestId = Guid.NewGuid()
+        Start = { Date = DateTime(2019, 09, 1); HalfDay = AM }
+        End = { Date = DateTime(2019, 09, 2); HalfDay = PM }
+      }
+      let requests = [
+        {
+          UserId = "jdoe"
+          RequestId = Guid.NewGuid()
+          Start = { Date = DateTime(2019, 10, 2); HalfDay = AM }
+          End = { Date = DateTime(2019, 10, 3); HalfDay = PM }
+        }
+        {
+          UserId = "jdoe"
+          RequestId = Guid.NewGuid()
+          Start = { Date = DateTime(2019, 10, 4); HalfDay = AM }
+          End = { Date = DateTime(2019, 10, 5); HalfDay = PM }
+        }
+        {
+          UserId = "jdoe"
+          RequestId = Guid.NewGuid()
+          Start = { Date = DateTime(2019, 10, 6); HalfDay = AM }
+          End = { Date = DateTime(2019, 10, 7); HalfDay = PM }
+        }
+      ] 
+      Expect.isFalse(Logic.overlapsWithAnyRequest requests request) "One date is overlap"
+    }
   ]
 
 
