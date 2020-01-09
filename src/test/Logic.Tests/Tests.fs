@@ -141,13 +141,45 @@ let creationTests =
       let request = {
         UserId = "jdoe"
         RequestId = Guid.NewGuid()
+        Start = { Date = DateTime(2020, 12, 27); HalfDay = AM }
+        End = { Date = DateTime(2020, 12, 27); HalfDay = PM } }
+
+      Given [ ]
+      |> ConnectedAs (Employee "jdoe")
+      |> When (RequestTimeOff request)
+      |> Then (Ok [RequestCreated request]) "The request should have been created"
+    }
+
+    test "Create a request in the past" {
+      let request = {
+        UserId = "jdoe"
+        RequestId = Guid.NewGuid()
         Start = { Date = DateTime(2019, 12, 27); HalfDay = AM }
         End = { Date = DateTime(2019, 12, 27); HalfDay = PM } }
 
       Given [ ]
       |> ConnectedAs (Employee "jdoe")
       |> When (RequestTimeOff request)
-      |> Then (Ok [RequestCreated request]) "The request should have been created"
+      |> Then (Error "The request starts in the past") "The request shouldn't have been created"
+    }
+
+    test "Create overlap request" {
+      let request1 = {
+        UserId = "jdoe"
+        RequestId = Guid.NewGuid()
+        Start = { Date = DateTime(2020, 12, 18); HalfDay = AM }
+        End = { Date = DateTime(2020, 12, 23); HalfDay = PM } }
+
+      let request2 = {
+        UserId = "jdoe"
+        RequestId = Guid.NewGuid()
+        Start = { Date = DateTime(2020, 12, 20); HalfDay = AM }
+        End = { Date = DateTime(2020, 12, 25); HalfDay = PM } }
+
+      Given [ RequestCreated request1 ]
+      |> ConnectedAs (Employee "jdoe")
+      |> When (RequestTimeOff request2)
+      |> Then (Error "Overlapping request") "The request shouldn't have been created"
     }
   ]
 
@@ -158,8 +190,8 @@ let validationTests =
       let request = {
         UserId = "jdoe"
         RequestId = Guid.NewGuid()
-        Start = { Date = DateTime(2019, 12, 27); HalfDay = AM }
-        End = { Date = DateTime(2019, 12, 27); HalfDay = PM } }
+        Start = { Date = DateTime(2020, 12, 27); HalfDay = AM }
+        End = { Date = DateTime(2020, 12, 27); HalfDay = PM } }
 
       Given [ RequestCreated request ]
       |> ConnectedAs Manager
