@@ -198,4 +198,30 @@ let validationTests =
       |> When (ValidateRequest ("jdoe", request.RequestId))
       |> Then (Ok [RequestValidated request]) "The request should have been validated"
     }
+
+    test "Try to validate a not created request" {
+      let request = {
+        UserId = "jdoe"
+        RequestId = Guid.NewGuid()
+        Start = { Date = DateTime(2020, 12, 27); HalfDay = AM }
+        End = { Date = DateTime(2020, 12, 27); HalfDay = PM } }
+
+      Given [ ]
+      |> ConnectedAs Manager
+      |> When (ValidateRequest ("jdoe", request.RequestId))
+      |> Then (Error "Request cannot be validated") "The request shouldn't have been validated"
+    }
+
+    test "Try to validate a request already validated" {
+      let request = {
+        UserId = "jdoe"
+        RequestId = Guid.NewGuid()
+        Start = { Date = DateTime(2020, 12, 27); HalfDay = AM }
+        End = { Date = DateTime(2020, 12, 27); HalfDay = PM } }
+
+      Given [ RequestValidated request ]
+      |> ConnectedAs Manager
+      |> When (ValidateRequest ("jdoe", request.RequestId))
+      |> Then (Error "Request cannot be validated") "The request shouldn't have been validated"
+    }
   ]
