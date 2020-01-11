@@ -225,3 +225,102 @@ let validationTests =
       |> Then (Error "Request cannot be validated") "The request shouldn't have been validated"
     }
   ]
+
+[<Tests>]
+let cancelationTests =
+  testList "Cancelation tests" [
+    test "A request is canceled" {
+      let request = {
+        UserId = "jdoe"
+        RequestId = Guid.NewGuid()
+        Start = { Date = DateTime(2020, 12, 27); HalfDay = AM }
+        End = { Date = DateTime(2020, 12, 27); HalfDay = PM } }
+
+      Given [ RequestCreated request ]
+      |> ConnectedAs Manager
+      |> When (CancelRequest ("jdoe", request.RequestId))
+      |> Then (Ok [RequestCanceled request]) "The request should have been canceled"
+    }
+
+    test "Try to cancel a not created request" {
+      let request = {
+        UserId = "jdoe"
+        RequestId = Guid.NewGuid()
+        Start = { Date = DateTime(2020, 12, 27); HalfDay = AM }
+        End = { Date = DateTime(2020, 12, 27); HalfDay = PM } }
+
+      Given [ ]
+      |> ConnectedAs Manager
+      |> When (CancelRequest ("jdoe", request.RequestId))
+      |> Then (Error "Request cannot be canceled") "The request shouldn't have been canceled"
+    }
+
+    test "Try to cancel a request already canceled" {
+      let request = {
+        UserId = "jdoe"
+        RequestId = Guid.NewGuid()
+        Start = { Date = DateTime(2020, 12, 27); HalfDay = AM }
+        End = { Date = DateTime(2020, 12, 27); HalfDay = PM } }
+
+      Given [ RequestCanceled request ]
+      |> ConnectedAs Manager
+      |> When (CancelRequest ("jdoe", request.RequestId))
+      |> Then (Error "Request cannot be canceled") "The request shouldn't have been canceled"
+    }
+
+    test "Cancel a validated request" {
+      let request = {
+        UserId = "jdoe"
+        RequestId = Guid.NewGuid()
+        Start = { Date = DateTime(2020, 12, 27); HalfDay = AM }
+        End = { Date = DateTime(2020, 12, 27); HalfDay = PM } }
+
+      Given [ RequestValidated request ]
+      |> ConnectedAs Manager
+      |> When (CancelRequest ("jdoe", request.RequestId))
+      |> Then (Ok [RequestCanceled request]) "The request should have been canceled"
+    }
+  ]
+
+[<Tests>]
+let refusationTests =
+  testList "Refusation tests" [
+    test "A request is refused" {
+      let request = {
+        UserId = "jdoe"
+        RequestId = Guid.NewGuid()
+        Start = { Date = DateTime(2020, 12, 27); HalfDay = AM }
+        End = { Date = DateTime(2020, 12, 27); HalfDay = PM } }
+
+      Given [ RequestCreated request ]
+      |> ConnectedAs Manager
+      |> When (RefuseRequest ("jdoe", request.RequestId))
+      |> Then (Ok [RequestRefused request]) "The request should have been refused"
+    }
+
+    test "Try to refuse a not created request" {
+      let request = {
+        UserId = "jdoe"
+        RequestId = Guid.NewGuid()
+        Start = { Date = DateTime(2020, 12, 27); HalfDay = AM }
+        End = { Date = DateTime(2020, 12, 27); HalfDay = PM } }
+
+      Given [ ]
+      |> ConnectedAs Manager
+      |> When (RefuseRequest ("jdoe", request.RequestId))
+      |> Then (Error "Request cannot be refused") "The request shouldn't have been refused"
+    }
+
+    test "Try to refuse a request already refused" {
+      let request = {
+        UserId = "jdoe"
+        RequestId = Guid.NewGuid()
+        Start = { Date = DateTime(2020, 12, 27); HalfDay = AM }
+        End = { Date = DateTime(2020, 12, 27); HalfDay = PM } }
+
+      Given [ RequestRefused request ]
+      |> ConnectedAs Manager
+      |> When (RefuseRequest ("jdoe", request.RequestId))
+      |> Then (Error "Request cannot be refused") "The request shouldn't have been refused"
+    }
+  ]
