@@ -133,7 +133,10 @@ module Logic =
                     validateRequest requestState
             | CancelRequest (_, requestId) -> 
                     let requestState = defaultArg(userRequests.TryFind requestId) NotCreated
-                    cancelRequest requestState
+                    if requestState.Request.End.Date < System.DateTime.Now then
+                        Error "Unauthorized"
+                    else
+                        cancelRequest requestState
             | RefuseRequest (_, requestId) -> 
                 if user <> Manager then
                     Error "Unauthorized"
