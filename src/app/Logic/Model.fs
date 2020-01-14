@@ -143,3 +143,36 @@ module Logic =
                 else 
                     let requestState = defaultArg(userRequests.TryFind requestId) NotCreated
                     refuseRequest requestState
+    
+    // Ensemble des congés attribués depuis le début de l'année
+    // = Tous les congés   
+    let attributedDays =
+        float (System.DateTime.Now.Month - 1) * 2.5
+    
+    // TODO : Manque ici la fonction donnant le report du solde de l'année passée
+    
+    // Ensemble des congés effectifs
+    // = Les congés demandés du début d'année jusqu'à la date demandée
+    let effectiveUserRequestsUntilDate (requests: TimeOffRequest seq) (userId: UserId) (date: DateTime) =
+        requests
+            |> Seq.filter (fun request -> request.UserId = userId)
+            |> Seq.filter (fun request -> request.Start.Date.Year = System.DateTime.Now.Year)
+            |> Seq.filter (fun request -> request.Start.Date <= date)
+    
+    // Ensemble des congés prévus
+    // = Les congés prévus de la date demandée jusqu'à la fin d'année
+    let plannedUserRequestsFromDate (requests: TimeOffRequest seq) (userId: UserId) (date: DateTime) =
+        requests
+            |> Seq.filter (fun request -> request.UserId = userId)
+            |> Seq.filter (fun request -> request.Start.Date.Year = System.DateTime.Now.Year)
+            |> Seq.filter (fun request -> request.Start.Date > date)
+    
+    // Solde diponible
+    // = Attribués - (effectifs + prévus)
+    // TODO : La fonction n'est pas bonne car soustrait le total au nombre de congés demandés dans l'année
+    // TODO : Elle doit le soustraire au nombre de jours de congés de chacune de ces demandes
+    let availableDays (requests: TimeOffRequest seq) (userId: UserId) =
+        attributedDays
+            // TODO : + reportedDays
+            - float (effectiveUserRequestsUntilDate requests userId System.DateTime.Now |> Seq.length)
+            - float (plannedUserRequestsFromDate requests userId System.DateTime.Now |> Seq.length)
