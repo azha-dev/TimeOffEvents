@@ -98,6 +98,8 @@ module Logic =
                 Ok [RequestCanceled request]
             | Validated request ->
                 Ok [RequestCanceled request]
+            | Canceled _->
+                Error "Request already canceled"
             | _ ->
                 Error "Request cannot be canceled"
 
