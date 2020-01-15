@@ -224,6 +224,18 @@ let validationTests =
       |> When (ValidateRequest ("jdoe", request.RequestId))
       |> Then (Error "Request cannot be validated") "The request shouldn't have been validated"
     }
+    test "A request pending for cancelation is validated (not canceled)" {
+      let request = {
+        UserId = "jdoe"
+        RequestId = Guid.NewGuid()
+        Start = { Date = DateTime(2020, 12, 27); HalfDay = AM }
+        End = { Date = DateTime(2020, 12, 27); HalfDay = PM } }
+      
+      Given [ RequestAskedForCancel request ]
+      |> ConnectedAs Manager
+      |> When (ValidateRequest ("jdoe", request.RequestId))
+      |> Then (Ok [RequestValidated request]) "The request should have been validated"
+    }
   ]
 
 [<Tests>]
@@ -235,7 +247,7 @@ let cancelationTests =
         RequestId = Guid.NewGuid()
         Start = { Date = DateTime(2020, 12, 27); HalfDay = AM }
         End = { Date = DateTime(2020, 12, 27); HalfDay = PM } }
-
+      
       Given [ RequestCreated request ]
       |> ConnectedAs Manager
       |> When (CancelRequest ("jdoe", request.RequestId))
@@ -265,17 +277,43 @@ let cancelationTests =
       Given [ RequestCanceled request ]
       |> ConnectedAs Manager
       |> When (CancelRequest ("jdoe", request.RequestId))
-      |> Then (Error "Request cannot be canceled") "The request shouldn't have been canceled"
+      |> Then (Error "Request already canceled") "The request shouldn't have been canceled"
     }
 
-    test "Cancel a validated request" {
+    test "Cancel a validated request in past as employee" {
+      let request = {
+        UserId = "jdoe"
+        RequestId = Guid.NewGuid()
+        Start = { Date = DateTime(2020, 01, 01); HalfDay = AM }
+        End = { Date = DateTime(2020, 01, 01); HalfDay = PM } }
+      let user = Employee "jdoe"
+      Given [ RequestValidated request ]
+      |> ConnectedAs user
+      |> When (CancelRequest ("jdoe", request.RequestId))
+      |> Then (Ok [RequestAskedForCancel request]) "The request should have been asked for cancel"
+    }
+
+    test "Cancel a validated request as employee" {
+      let request = {
+        UserId = "jdoe"
+        RequestId = Guid.NewGuid()
+        Start = { Date = DateTime(2020, 04, 01); HalfDay = AM }
+        End = { Date = DateTime(2020, 04, 01); HalfDay = PM } }
+      let user = Employee "jdoe"
+      Given [ RequestValidated request ]
+      |> ConnectedAs user
+      |> When (CancelRequest ("jdoe", request.RequestId))
+      |> Then (Ok [RequestCanceled request]) "The request should have been canceled"
+    }
+
+    test "A request pending for cancelation is canceled" {
       let request = {
         UserId = "jdoe"
         RequestId = Guid.NewGuid()
         Start = { Date = DateTime(2020, 12, 27); HalfDay = AM }
         End = { Date = DateTime(2020, 12, 27); HalfDay = PM } }
-
-      Given [ RequestValidated request ]
+      
+      Given [ RequestAskedForCancel request ]
       |> ConnectedAs Manager
       |> When (CancelRequest ("jdoe", request.RequestId))
       |> Then (Ok [RequestCanceled request]) "The request should have been canceled"

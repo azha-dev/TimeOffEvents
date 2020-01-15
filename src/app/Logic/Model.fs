@@ -68,7 +68,7 @@ module Logic =
         | RequestValidated request -> Validated request
         | RequestCanceled request -> Canceled request
         | RequestRefused request -> Refused request 
-        |RequestAskedForCancel request -> PendingCancelation request
+        | RequestAskedForCancel request -> PendingCancelation request
 
     let evolveUserRequests (userRequests: UserRequestsState) (event: RequestEvent) =
         let requestState = defaultArg (Map.tryFind event.Request.RequestId userRequests) NotCreated
