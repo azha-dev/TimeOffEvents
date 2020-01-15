@@ -22,6 +22,7 @@ type RequestEvent =
     | RequestValidated of TimeOffRequest
     | RequestCanceled of TimeOffRequest
     | RequestRefused of TimeOffRequest
+    | RequestAskedForCancel of TimeOffRequest
     with
     member this.Request =
         match this with
@@ -29,6 +30,7 @@ type RequestEvent =
         | RequestValidated request -> request
         | RequestCanceled request -> request 
         | RequestRefused request -> request 
+        | RequestAskedForCancel request -> request
 
 // We then define the state of the system,
 // and our 2 main functions `decide` and `evolve`
@@ -37,6 +39,7 @@ module Logic =
     type RequestState =
         | NotCreated
         | PendingValidation of TimeOffRequest
+        | PendingCancelation of TimeOffRequest
         | Validated of TimeOffRequest
         | Canceled of TimeOffRequest 
         | Refused of TimeOffRequest with
@@ -44,6 +47,7 @@ module Logic =
             match this with
             | NotCreated -> invalidOp "Not created"
             | PendingValidation request
+            | PendingCancelation request
             | Validated request -> request
             | Canceled request -> request
             | Refused request -> request 
@@ -51,6 +55,7 @@ module Logic =
             match this with
             | NotCreated -> false
             | PendingValidation _
+            | PendingCancelation _ -> true
             | Validated _ -> true
             | Canceled _ -> false
             | Refused _ -> false
@@ -63,6 +68,7 @@ module Logic =
         | RequestValidated request -> Validated request
         | RequestCanceled request -> Canceled request
         | RequestRefused request -> Refused request 
+        |RequestAskedForCancel request -> PendingCancelation request
 
     let evolveUserRequests (userRequests: UserRequestsState) (event: RequestEvent) =
         let requestState = defaultArg (Map.tryFind event.Request.RequestId userRequests) NotCreated
@@ -88,15 +94,30 @@ module Logic =
         match requestState with
         | PendingValidation request ->
             Ok [RequestValidated request]
+        | PendingCancelation request ->
+            Ok [RequestValidated request]
         | _ ->
             Error "Request cannot be validated"
 
+    let cancelRequestFromUser requestState =
+                match requestState with
+                | PendingValidation request ->
+                    Ok [RequestCanceled request]
+                | Validated request ->
+                    if requestState.Request.Start.Date > DateTime.Today then
+                        Ok [RequestCanceled request]
+                    else
+                        Ok [RequestAskedForCancel request]
+                | _ ->
+                    Error "Request cannot be canceled"
 
     let cancelRequest requestState =
             match requestState with
             | PendingValidation request ->
                 Ok [RequestCanceled request]
             | Validated request ->
+                Ok [RequestCanceled request]
+            | PendingCancelation request ->
                 Ok [RequestCanceled request]
             | _ ->
                 Error "Request cannot be canceled"
@@ -133,8 +154,8 @@ module Logic =
                     validateRequest requestState
             | CancelRequest (_, requestId) -> 
                     let requestState = defaultArg(userRequests.TryFind requestId) NotCreated
-                    if requestState.Request.End.Date < System.DateTime.Now then
-                        Error "Unauthorized"
+                    if user <> Manager then
+                        cancelRequestFromUser requestState
                     else
                         cancelRequest requestState
             | RefuseRequest (_, requestId) -> 
