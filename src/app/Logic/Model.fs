@@ -169,6 +169,24 @@ module Logic =
                     let requestState = defaultArg(userRequests.TryFind requestId) NotCreated
                     refuseRequest requestState
     
+    // Fonction calculant le nombre de jour contenue dans une ensemble de demandes
+    let rec calculateNumberOfDays (numberOfDays: float) (requests: TimeOffRequest seq) =
+        let lRequests = Seq.toList requests
+        match lRequests with
+        | [] -> numberOfDays
+        | request :: restOfRequests ->
+            numberOfDays = numberOfDays + float (request.End.Date.Subtract request.Start.Date).Days
+                    
+            match request.Start.HalfDay with
+            | HalfDay.PM -> numberOfDays = numberOfDays - 0.5
+            | _ -> numberOfDays = numberOfDays - 0.0
+                    
+            match request.End.HalfDay with
+            | HalfDay.AM -> numberOfDays = numberOfDays - 0.5
+            | _ -> numberOfDays = numberOfDays - 0.0
+            
+            calculateNumberOfDays numberOfDays restOfRequests
+    
     // Ensemble des congés attribués depuis le début de l'année
     // = Tous les congés   
     let attributedDays =
@@ -199,5 +217,5 @@ module Logic =
     let availableDays (requests: TimeOffRequest seq) (userId: UserId) =
         attributedDays
             // TODO : + reportedDays
-            - float (effectiveUserRequestsUntilDate requests userId (getCurrentDate()) |> Seq.length)
-            - float (plannedUserRequestsFromDate requests userId (getCurrentDate()) |> Seq.length)
+            - (effectiveUserRequestsUntilDate requests userId System.DateTime.Now |> calculateNumberOfDays 0.0) 
+            - (plannedUserRequestsFromDate requests userId System.DateTime.Now |> calculateNumberOfDays 0.0)
