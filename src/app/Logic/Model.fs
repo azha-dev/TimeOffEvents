@@ -175,17 +175,17 @@ module Logic =
         match lRequests with
         | [] -> numberOfDays
         | request :: restOfRequests ->
-            numberOfDays = numberOfDays + float (request.End.Date.Subtract request.Start.Date).Days
+            let mutable days = numberOfDays + float (request.End.Date.Subtract request.Start.Date).Days
                     
             match request.Start.HalfDay with
-            | HalfDay.PM -> numberOfDays = numberOfDays - 0.5
-            | _ -> numberOfDays = numberOfDays - 0.0
+            | HalfDay.PM -> days <- numberOfDays - 0.5
+            | _ -> days <- numberOfDays - 0.0
                     
             match request.End.HalfDay with
-            | HalfDay.AM -> numberOfDays = numberOfDays - 0.5
-            | _ -> numberOfDays = numberOfDays - 0.0
+            | HalfDay.AM -> days <- numberOfDays - 0.5
+            | _ -> days <- numberOfDays - 0.0
             
-            calculateNumberOfDays numberOfDays restOfRequests
+            calculateNumberOfDays days restOfRequests
     
     // Ensemble des congés attribués depuis le début de l'année
     // = Tous les congés   
