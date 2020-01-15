@@ -35,7 +35,10 @@ type RequestEvent =
 // We then define the state of the system,
 // and our 2 main functions `decide` and `evolve`
 module Logic =
-
+    
+    let getCurrentDate () =
+        DateTime.Now
+        
     type RequestState =
         | NotCreated
         | PendingValidation of TimeOffRequest
@@ -68,7 +71,7 @@ module Logic =
         | RequestValidated request -> Validated request
         | RequestCanceled request -> Canceled request
         | RequestRefused request -> Refused request 
-        | RequestAskedForCancel request -> PendingCancelation request
+        |RequestAskedForCancel request -> PendingCancelation request
 
     let evolveUserRequests (userRequests: UserRequestsState) (event: RequestEvent) =
         let requestState = defaultArg (Map.tryFind event.Request.RequestId userRequests) NotCreated
@@ -84,8 +87,7 @@ module Logic =
     let createRequest activeUserRequests  request =
         if request |> overlapsWithAnyRequest activeUserRequests then
             Error "Overlapping request"
-        // This DateTime.Today must go away!
-        elif request.Start.Date <= DateTime.Today then
+        elif request.Start.Date <= getCurrentDate() then
             Error "The request starts in the past"
         else
             Ok [RequestCreated request]
@@ -104,7 +106,7 @@ module Logic =
                 | PendingValidation request ->
                     Ok [RequestCanceled request]
                 | Validated request ->
-                    if requestState.Request.Start.Date > DateTime.Today then
+                    if requestState.Request.Start.Date > getCurrentDate() then
                         Ok [RequestCanceled request]
                     else
                         Ok [RequestAskedForCancel request]
@@ -170,7 +172,7 @@ module Logic =
     // Ensemble des congés attribués depuis le début de l'année
     // = Tous les congés   
     let attributedDays =
-        float (System.DateTime.Now.Month - 1) * 2.5
+        float (getCurrentDate().Month - 1) * 2.5
     
     // TODO : Manque ici la fonction donnant le report du solde de l'année passée
     
@@ -179,7 +181,7 @@ module Logic =
     let effectiveUserRequestsUntilDate (requests: TimeOffRequest seq) (userId: UserId) (date: DateTime) =
         requests
             |> Seq.filter (fun request -> request.UserId = userId)
-            |> Seq.filter (fun request -> request.Start.Date.Year = System.DateTime.Now.Year)
+            |> Seq.filter (fun request -> request.Start.Date.Year = getCurrentDate().Year)
             |> Seq.filter (fun request -> request.Start.Date <= date)
     
     // Ensemble des congés prévus
@@ -187,7 +189,7 @@ module Logic =
     let plannedUserRequestsFromDate (requests: TimeOffRequest seq) (userId: UserId) (date: DateTime) =
         requests
             |> Seq.filter (fun request -> request.UserId = userId)
-            |> Seq.filter (fun request -> request.Start.Date.Year = System.DateTime.Now.Year)
+            |> Seq.filter (fun request -> request.Start.Date.Year = getCurrentDate().Year)
             |> Seq.filter (fun request -> request.Start.Date > date)
     
     // Solde diponible
@@ -197,5 +199,5 @@ module Logic =
     let availableDays (requests: TimeOffRequest seq) (userId: UserId) =
         attributedDays
             // TODO : + reportedDays
-            - float (effectiveUserRequestsUntilDate requests userId System.DateTime.Now |> Seq.length)
-            - float (plannedUserRequestsFromDate requests userId System.DateTime.Now |> Seq.length)
+            - float (effectiveUserRequestsUntilDate requests userId (getCurrentDate()) |> Seq.length)
+            - float (plannedUserRequestsFromDate requests userId (getCurrentDate()) |> Seq.length)
